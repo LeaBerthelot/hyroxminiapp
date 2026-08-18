@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -97,6 +98,8 @@
   .pill-crossfit{ background: color-mix(in srgb, var(--series-crossfit) 16%, transparent); color: var(--series-crossfit); }
   .pill-none    { background: color-mix(in srgb, var(--series-none) 20%, transparent); color: var(--text-secondary); }
   .pill-race    { background: color-mix(in srgb, var(--status-critical) 16%, transparent); color: var(--status-critical); }
+  .run-rx { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--series-running) 10%, transparent); border: 1px solid color-mix(in srgb, var(--series-running) 30%, transparent); font-size: 13px; color: var(--text-primary); }
+  .run-rx-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--series-running); font-weight: 700; margin-bottom: 3px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .dot-running { background: var(--series-running); }
   .dot-hyrox { background: var(--series-hyrox); }
@@ -185,6 +188,14 @@
 
   .adherence-bar { height: 8px; border-radius: 4px; background: var(--gridline); overflow: hidden; margin-top: 6px; }
   .adherence-bar .fill { height: 100%; background: var(--series-running); border-radius: 4px; }
+
+  .run-plan-note { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 12px; }
+  .run-row { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--gridline); align-items: baseline; }
+  .run-row:last-child { border-bottom: none; }
+  .run-row-date { flex-shrink: 0; width: 68px; font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .run-row-body { flex: 1; min-width: 0; }
+  .run-row-label { display: block; font-size: 13px; font-weight: 700; color: var(--series-running); }
+  .run-row-detail { display: block; font-size: 12.5px; color: var(--text-secondary); margin-top: 1px; }
 </style>
 </head>
 <body>
