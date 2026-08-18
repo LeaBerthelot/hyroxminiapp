@@ -2,7 +2,7 @@
 
 const RACE_DATE = '2026-12-06';
 const PROGRAM_START = '2026-09-01';
-const ACTIVITY_TYPES = ['Running', 'Hyrox Training', 'Boxing', 'Crossfit', 'None'];
+const ACTIVITY_TYPES = ['Running', 'Hyrox Training', 'Boxing', 'Crossfit'];
 const HYROX_STATIONS = ['None', 'SkiErg', 'Sled Push', 'Sled Pull', 'Burpee Broad Jump', 'Rowing', 'Farmers Carry', 'Sandbag Lunge', 'Wall Balls'];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
