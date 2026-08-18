@@ -79,6 +79,40 @@ const PATTERNS = {
   taper: { label: 'Taper', count: 2, days: { 2: 'Boxing', 4: 'Running' } },
 };
 
+// ---------- running plan ----------
+// Benchmarks used: current fitness = 5km easy @ 6:00/km, longest run 8km.
+// Race demand (Hyrox Doubles) = 8 x 1km, both partners running every leg together
+// within 15s/km of each other (running is not split like station work).
+// Race-day running pace typically runs ~30-45s/km slower than flat/fresh pace
+// because of accumulated fatigue from the 8 stations, so a realistic goal pace
+// for a sub-2h Duo finish is roughly 6:15-6:30/km rather than your flat 6:00/km.
+// Structure follows a simple polarized approach (easy long runs to build the
+// aerobic engine + race-pace interval/rep work to rehearse the 8x1km demand),
+// progressing base -> build -> peak, then a short taper shakeout.
+const GOAL_PACE = '6:15–6:30/km';
+const RUN_SESSIONS = [
+  // --- Base phase (8 sessions, alternating long run / intervals) ---
+  { label: 'Long run', detail: '6 km, easy conversational pace (~6:30–6:45/km)' },
+  { label: 'Intervals', detail: '5 × 600 m @ ~6:00–6:15/km, 90 sec jog recovery' },
+  { label: 'Long run', detail: '7 km, easy pace' },
+  { label: 'Intervals', detail: '6 × 600 m @ ~6:00–6:15/km, 90 sec jog recovery' },
+  { label: 'Long run', detail: '8 km, easy pace — your current max, kept controlled' },
+  { label: 'Intervals', detail: `5 × 1 km @ goal race pace (${GOAL_PACE}), 2 min jog recovery` },
+  { label: 'Long run', detail: '9 km, easy pace — new distance territory' },
+  { label: 'Intervals', detail: `6 × 1 km @ goal race pace (${GOAL_PACE}), 2 min jog recovery` },
+  // --- Build phase (3 sessions) ---
+  { label: 'Long run', detail: '10 km, easy pace' },
+  { label: 'Intervals', detail: `7 × 1 km @ ~6:15/km, 90 sec recovery — shorter rest, more race-like` },
+  { label: 'Progression run', detail: `10–11 km easy, last 2 km at goal race pace (${GOAL_PACE})` },
+  // --- Peak phase (4 sessions: 2 per week for 2 weeks) ---
+  { label: 'Long run', detail: '11 km steady, comfortably hard in the back half' },
+  { label: 'Race simulation', detail: `8 × 1 km @ goal race pace (${GOAL_PACE}), 90 sec recovery — full rep count, dress rehearsal` },
+  { label: 'Intervals', detail: '6 × 1 km @ ~6:00–6:15/km (slightly faster than race pace), 2 min recovery' },
+  { label: 'Long run', detail: '8 km easy — volume easing off before taper' },
+  // --- Taper (1 session, race week) ---
+  { label: 'Shakeout', detail: '20–25 min very easy (3–4 km) + 4 × 20 sec strides at race effort' },
+];
+
 function phaseForWeek(weekMonday) {
   const raceMonday = mondayOf(RACE_DATE);
   const weeksOut = Math.round((fromDateStr(raceMonday) - fromDateStr(weekMonday)) / (7 * 86400000));
@@ -91,8 +125,9 @@ function phaseForWeek(weekMonday) {
 let _program = null;
 function generateProgram() {
   if (_program) return _program;
-  const program = {}; // date -> {type, phase, isRace}
+  const program = {}; // date -> {type, phase, isRace, running?}
   let cursor = PROGRAM_START;
+  let runIdx = 0;
   while (cursor <= RACE_DATE) {
     const d = fromDateStr(cursor);
     const dow = d.getDay();
@@ -100,7 +135,12 @@ function generateProgram() {
     const phaseKey = phaseForWeek(wk);
     const pattern = PATTERNS[phaseKey];
     const type = pattern.days[dow] || null;
-    program[cursor] = { type, phase: phaseKey, isRace: cursor === RACE_DATE };
+    const entry = { type, phase: phaseKey, isRace: cursor === RACE_DATE };
+    if (type === 'Running' && runIdx < RUN_SESSIONS.length) {
+      entry.running = RUN_SESSIONS[runIdx];
+      runIdx++;
+    }
+    program[cursor] = entry;
     cursor = addDays(cursor, 1);
   }
   _program = program;
@@ -167,6 +207,7 @@ function renderToday() {
         ? `<span class="pill pill-race">🏁 Hyrox Duo — race day!</span>`
         : plannedType
           ? `<span class="${pillClass(plannedType)}">${plannedType}</span><div style="margin-top:8px;font-size:12px;color:var(--text-secondary)">${fmtFull(today)} · ${info.phase} phase</div>`
+            + (info.running ? `<div class="run-rx"><span class="run-rx-label">${info.running.label}</span>${info.running.detail}</div>` : '')
           : `<span class="pill pill-none">Rest day</span><div style="margin-top:8px;font-size:12px;color:var(--text-secondary)">${fmtFull(today)}</div>`}
       <button class="primary" id="quickLogBtn">+ Log today's activity</button>
     </div>
@@ -318,11 +359,31 @@ function renderProgram() {
         <span><span class="dot dot-crossfit"></span>Crossfit</span>
       </div>
     </div>
+    ${runningPlanHtml(program)}
     <div class="card">
       <h2>16-week schedule (Sept 1 → Dec 6)</h2>
       ${weeks.map(w => weekRowHtml(w, program, loggedDates, today)).join('')}
     </div>
   `;
+}
+
+function runningPlanHtml(program) {
+  const rows = Object.entries(program)
+    .filter(([, info]) => info.running)
+    .map(([date, info]) => `
+      <div class="run-row">
+        <div class="run-row-date">${fmtShort(date)}</div>
+        <div class="run-row-body">
+          <span class="run-row-label">${info.running.label}</span>
+          <span class="run-row-detail">${info.running.detail}</span>
+        </div>
+      </div>`).join('');
+  return `
+    <div class="card">
+      <h2>Running plan</h2>
+      <p class="run-plan-note">Based on your current 5K (~6:00/km) and 8K long run, building toward roughly ${GOAL_PACE} race pace for the Duo's 8×1km (Hyrox running tends to run 30–45s/km slower than flat pace once station fatigue sets in, and Doubles requires staying within 15s/km of your partner). Long runs build the aerobic engine; interval and race-pace reps rehearse running under fatigue.</p>
+      ${rows}
+    </div>`;
 }
 
 function weekRowHtml(week, program, loggedDates, today) {
@@ -346,7 +407,8 @@ function weekRowHtml(week, program, loggedDates, today) {
           if (date === today) cls += ' today';
           const d = fromDateStr(date);
           const label = info.isRace ? '🏁' : (info.type ? info.type.split(' ')[0] : '·');
-          return `<div class="${cls}" title="${fmtFull(date)}"><div class="d">${WEEKDAYS[d.getDay()]}</div>${d.getDate()}<br>${label}</div>`;
+          const titleAttr = info.running ? `${fmtFull(date)} — ${info.running.label}: ${info.running.detail}` : fmtFull(date);
+          return `<div class="${cls}" title="${titleAttr}"><div class="d">${WEEKDAYS[d.getDay()]}</div>${d.getDate()}<br>${label}</div>`;
         }).join('')}
       </div>
     </div>`;
