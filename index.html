@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Hyrox Duo Tracker</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hyrox">
+<meta name="theme-color" content="#2a78d6">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<script src="chart.umd.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-running: #2a78d6;
+    --series-hyrox: #eb6834;
+    --series-boxing: #1baf7a;
+    --series-crossfit: #eda100;
+    --series-none: #b9b8b2;
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --gridline: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-running: #3987e5;
+      --series-hyrox: #d95926;
+      --series-boxing: #199e70;
+      --series-crossfit: #c98500;
+      --series-none: #55544f;
+      --status-good: #0ca30c;
+      --status-warning: #fab219;
+      --status-critical: #d03b3b;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+  header.topbar {
+    padding: 14px 18px 10px;
+    display: flex; align-items: baseline; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  header.topbar h1 { font-size: 20px; margin: 0; font-weight: 700; }
+  header.topbar .today-date { font-size: 13px; color: var(--text-secondary); }
+  main { flex: 1; overflow-y: auto; padding: 4px 16px 90px; -webkit-overflow-scrolling: touch; }
+  .tab { display: none; }
+  .tab.active { display: block; animation: fadein .15s ease; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin: 0 0 10px; font-weight: 600; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .stat-tile { text-align: center; }
+  .stat-tile .num { font-size: 34px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat-tile .label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .countdown-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .pill-running { background: color-mix(in srgb, var(--series-running) 16%, transparent); color: var(--series-running); }
+  .pill-hyrox   { background: color-mix(in srgb, var(--series-hyrox) 16%, transparent); color: var(--series-hyrox); }
+  .pill-boxing  { background: color-mix(in srgb, var(--series-boxing) 16%, transparent); color: var(--series-boxing); }
+  .pill-crossfit{ background: color-mix(in srgb, var(--series-crossfit) 16%, transparent); color: var(--series-crossfit); }
+  .pill-none    { background: color-mix(in srgb, var(--series-none) 20%, transparent); color: var(--text-secondary); }
+  .pill-race    { background: color-mix(in srgb, var(--status-critical) 16%, transparent); color: var(--status-critical); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-running { background: var(--series-running); }
+  .dot-hyrox { background: var(--series-hyrox); }
+  .dot-boxing { background: var(--series-boxing); }
+  .dot-crossfit { background: var(--series-crossfit); }
+  .dot-none { background: var(--series-none); }
+
+  .status-choice { display: flex; gap: 8px; }
+  .status-btn {
+    flex: 1; padding: 12px 0; border-radius: 12px; border: 1.5px solid var(--gridline);
+    background: transparent; font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  }
+  .status-btn.sel-good { border-color: var(--status-good); background: color-mix(in srgb, var(--status-good) 14%, transparent); color: var(--status-good); }
+  .status-btn.sel-medium { border-color: var(--status-warning); background: color-mix(in srgb, var(--status-warning) 18%, transparent); color: #8a5a00; }
+  .status-btn.sel-bad { border-color: var(--status-critical); background: color-mix(in srgb, var(--status-critical) 14%, transparent); color: var(--status-critical); }
+  @media (prefers-color-scheme: dark) {
+    .status-btn.sel-medium { color: var(--status-warning); }
+  }
+
+  label { display: block; font-size: 12px; color: var(--text-secondary); margin: 12px 0 6px; font-weight: 600; }
+  label:first-child { margin-top: 0; }
+  select, input[type=date], input[type=number], textarea {
+    width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--gridline);
+    background: var(--page); color: var(--text-primary); font-size: 15px; font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 50px; }
+  button.primary {
+    width: 100%; padding: 13px 0; border-radius: 12px; border: none;
+    background: var(--series-running); color: white; font-size: 15px; font-weight: 700; margin-top: 16px;
+  }
+  button.primary:active { opacity: .8; }
+  button.ghost {
+    padding: 8px 12px; border-radius: 10px; border: 1px solid var(--gridline); background: transparent;
+    color: var(--text-secondary); font-size: 13px; font-weight: 600;
+  }
+
+  .log-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--gridline); }
+  .log-item:last-child { border-bottom: none; }
+  .log-item .meta { flex: 1; min-width: 0; }
+  .log-item .meta .main { font-size: 14px; font-weight: 600; }
+  .log-item .meta .sub { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .log-item .date { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
+  .log-item .del { flex-shrink: 0; background: none; border: none; color: var(--status-critical); font-size: 18px; padding: 4px 6px; }
+  .empty { color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px 0; }
+
+  .week-row { padding: 10px 0; border-bottom: 1px solid var(--gridline); }
+  .week-row:last-child { border-bottom: none; }
+  .week-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .week-head .phase { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); font-weight: 700; }
+  .week-head .range { font-size: 12px; color: var(--text-secondary); }
+  .day-strip { display: flex; gap: 6px; }
+  .day-chip {
+    flex: 1; text-align: center; border-radius: 10px; padding: 6px 2px; font-size: 10px;
+    border: 1.5px solid var(--gridline); color: var(--text-muted);
+  }
+  .day-chip .d { font-size: 9px; text-transform: uppercase; opacity: .7; }
+  .day-chip.planned-running { border-color: var(--series-running); background: color-mix(in srgb, var(--series-running) 14%, transparent); color: var(--series-running); }
+  .day-chip.planned-hyrox { border-color: var(--series-hyrox); background: color-mix(in srgb, var(--series-hyrox) 14%, transparent); color: var(--series-hyrox); }
+  .day-chip.planned-boxing { border-color: var(--series-boxing); background: color-mix(in srgb, var(--series-boxing) 14%, transparent); color: var(--series-boxing); }
+  .day-chip.planned-crossfit { border-color: var(--series-crossfit); background: color-mix(in srgb, var(--series-crossfit) 14%, transparent); color: var(--series-crossfit); }
+  .day-chip.race { border-color: var(--status-critical); background: color-mix(in srgb, var(--status-critical) 16%, transparent); color: var(--status-critical); font-weight: 700; }
+  .day-chip.done { box-shadow: inset 0 0 0 2px currentColor; }
+  .day-chip.today { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+  .chart-wrap { position: relative; height: 200px; }
+  .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .heat-cell { aspect-ratio: 1; border-radius: 5px; background: var(--gridline); position: relative; }
+  .heat-cell .a { position: absolute; inset: 0; border-radius: 5px; }
+  .heat-cell .f { position: absolute; left: 2px; bottom: 2px; width: 6px; height: 6px; border-radius: 50%; }
+  .heat-cell .al { position: absolute; right: 2px; bottom: 2px; width: 6px; height: 6px; border-radius: 50%; }
+
+  nav.tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; background: var(--surface-1); border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav.tabbar button {
+    flex: 1; background: none; border: none; padding: 10px 0 8px; color: var(--text-muted);
+    font-size: 10.5px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  nav.tabbar button .ic { font-size: 20px; line-height: 1; }
+  nav.tabbar button.active { color: var(--series-running); }
+
+  .adherence-bar { height: 8px; border-radius: 4px; background: var(--gridline); overflow: hidden; margin-top: 6px; }
+  .adherence-bar .fill { height: 100%; background: var(--series-running); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1>Hyrox Duo Tracker</h1>
+    <span class="today-date" id="topDate"></span>
+  </header>
+  <main>
+    <section class="tab active" id="tab-today"></section>
+    <section class="tab" id="tab-log"></section>
+    <section class="tab" id="tab-program"></section>
+    <section class="tab" id="tab-progress"></section>
+  </main>
+  <nav class="tabbar">
+    <button data-tab="today" class="active"><span class="ic">🏁</span>Today</button>
+    <button data-tab="log"><span class="ic">📝</span>Log</button>
+    <button data-tab="program"><span class="ic">📅</span>Program</button>
+    <button data-tab="progress"><span class="ic">📈</span>Progress</button>
+  </nav>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

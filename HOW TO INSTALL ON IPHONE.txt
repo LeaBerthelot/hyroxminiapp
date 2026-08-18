@@ -1,0 +1,45 @@
+Hyrox Duo Tracker — install on your iPhone
+=============================================
+
+This is a self-contained web app. All your data (activity log, food/alcohol
+status) is stored only on your phone, in Safari's local storage — nothing is
+sent anywhere, and there is no account or server involved.
+
+RECOMMENDED: host it for free, then add it to your Home Screen
+----------------------------------------------------------------
+For the full "looks like an app" experience (own icon, no Safari address bar,
+works offline), the files need to be served over https rather than opened as
+local files. The fastest free options, ~2 minutes each:
+
+  1. GitHub Pages — if you have a GitHub account: create a new repo, upload
+     all files in this folder to it, enable Pages in Settings, then open the
+     resulting URL on your iPhone.
+
+  2. Netlify Drop (app.netlify.com/drop) or Vercel — drag this whole folder
+     onto the page, get a URL back, open it on your iPhone.
+
+Once you open the URL in Safari on your iPhone:
+  1. Tap the Share icon (square with an arrow) in Safari's toolbar.
+  2. Tap "Add to Home Screen".
+  3. Tap "Add".
+
+You'll get a "Hyrox" icon on your home screen that opens full-screen, like a
+real app, and keeps working offline once it's loaded once.
+
+QUICK & DIRTY: no hosting at all
+----------------------------------
+You can also just AirDrop the whole folder to your iPhone, save it to Files,
+then open index.html with Safari (long-press → Share → Safari, or open Files
+app and tap it). It'll work and save your data locally, but iOS may treat
+"Add to Home Screen" as a plain bookmark rather than a full standalone app
+icon in this mode — good enough to try it today, worth the 2-minute hosting
+step once you know you'll keep using it.
+
+WHAT'S INSIDE
+----------------------------------
+index.html, app.js, chart.umd.min.js  — the app itself
+manifest.json, sw.js, icon-*.png       — home-screen icon + offline support
+
+Your training program (Sept 1 → Dec 6, phased 3→4→5 sessions/week, Boxing
+always Tuesday, Hyrox always Friday, taper race week) is generated automatically
+by the app — nothing to configure.
