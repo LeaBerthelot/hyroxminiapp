@@ -26,6 +26,10 @@ function fmtShort(dateStr) {
   const d = fromDateStr(dateStr);
   return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
+function fmtMonthDay(dateStr) {
+  const d = fromDateStr(dateStr);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 function fmtFull(dateStr) {
   const d = fromDateStr(dateStr);
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
@@ -324,7 +328,7 @@ function renderProgram() {
 function weekRowHtml(week, program, loggedDates, today) {
   const first = program[week.days[0]];
   const phaseLabel = PATTERNS[first.phase].label;
-  const rangeLabel = fmtShort(week.days[0]).split(',')[1].trim() + ' – ' + fmtShort(week.days[week.days.length - 1]).split(',')[1].trim();
+  const rangeLabel = fmtMonthDay(week.days[0]) + ' – ' + fmtMonthDay(week.days[week.days.length - 1]);
   return `
     <div class="week-row">
       <div class="week-head">
@@ -404,7 +408,7 @@ function drawActivityChart() {
   activityChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: weeks.map(w => fmtShort(w).split(',')[1].trim()),
+      labels: weeks.map(w => fmtMonthDay(w)),
       datasets: ['Running', 'Hyrox Training', 'Boxing', 'Crossfit'].map(type => ({
         label: type,
         data: weeks.map(w => byWeek[w][type]),
