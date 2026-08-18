@@ -359,31 +359,12 @@ function renderProgram() {
         <span><span class="dot dot-crossfit"></span>Crossfit</span>
       </div>
     </div>
-    ${runningPlanHtml(program)}
     <div class="card">
       <h2>16-week schedule (Sept 1 → Dec 6)</h2>
+      <p class="run-plan-note">Tap any <strong>Running</strong> day for that session's plan — long runs build the aerobic engine, interval/race-pace reps rehearse the Duo's 8×1km under fatigue. Goal race pace ≈ ${GOAL_PACE}.</p>
       ${weeks.map(w => weekRowHtml(w, program, loggedDates, today)).join('')}
     </div>
   `;
-}
-
-function runningPlanHtml(program) {
-  const rows = Object.entries(program)
-    .filter(([, info]) => info.running)
-    .map(([date, info]) => `
-      <div class="run-row">
-        <div class="run-row-date">${fmtShort(date)}</div>
-        <div class="run-row-body">
-          <span class="run-row-label">${info.running.label}</span>
-          <span class="run-row-detail">${info.running.detail}</span>
-        </div>
-      </div>`).join('');
-  return `
-    <div class="card">
-      <h2>Running plan</h2>
-      <p class="run-plan-note">Based on your current 5K (~6:00/km) and 8K long run, building toward roughly ${GOAL_PACE} race pace for the Duo's 8×1km (Hyrox running tends to run 30–45s/km slower than flat pace once station fatigue sets in, and Doubles requires staying within 15s/km of your partner). Long runs build the aerobic engine; interval and race-pace reps rehearse running under fatigue.</p>
-      ${rows}
-    </div>`;
 }
 
 function weekRowHtml(week, program, loggedDates, today) {
@@ -407,8 +388,8 @@ function weekRowHtml(week, program, loggedDates, today) {
           if (date === today) cls += ' today';
           const d = fromDateStr(date);
           const label = info.isRace ? '🏁' : (info.type ? info.type.split(' ')[0] : '·');
-          const titleAttr = info.running ? `${fmtFull(date)} — ${info.running.label}: ${info.running.detail}` : fmtFull(date);
-          return `<div class="${cls}" title="${titleAttr}"><div class="d">${WEEKDAYS[d.getDay()]}</div>${d.getDate()}<br>${label}</div>`;
+          const runningAttr = info.running ? ` data-running="1" data-date="${date}"` : '';
+          return `<div class="${cls}" title="${fmtFull(date)}"${runningAttr}><div class="d">${WEEKDAYS[d.getDay()]}</div>${d.getDate()}<br>${label}</div>`;
         }).join('')}
       </div>
     </div>`;
@@ -516,6 +497,29 @@ function drawHeatmap() {
   }
   wrap.innerHTML = html;
 }
+
+// ---------- Running session modal ----------
+function openRunModal(date) {
+  const info = generateProgram()[date];
+  if (!info || !info.running) return;
+  document.getElementById('runModalDate').textContent = fmtFull(date);
+  document.getElementById('runModalLabel').textContent = info.running.label;
+  document.getElementById('runModalDetail').textContent = info.running.detail;
+  document.getElementById('runModalBackdrop').classList.add('open');
+  document.getElementById('runModal').classList.add('open');
+}
+function closeRunModal() {
+  document.getElementById('runModalBackdrop').classList.remove('open');
+  document.getElementById('runModal').classList.remove('open');
+}
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('.day-chip[data-running]');
+  if (chip) { openRunModal(chip.dataset.date); return; }
+  if (e.target.id === 'runModalBackdrop' || e.target.id === 'runModalClose') closeRunModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeRunModal();
+});
 
 // ---------- Tab switching ----------
 function switchTab(name) {
